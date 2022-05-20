@@ -1,9 +1,55 @@
 pragma solidity ^0.8.0;
 
 contract AcademicService {
+
+    // Smart Contracts should be small, because of gas consumption
+
+
+    // --> The admin of the contract <--
+    address course;
+
+    // The course's subjects
+    Subject[] Subjects;
+
+    // The students
+    address[] Students;
+    
+    // The professors
+    address[] Professors;
+
+
+    // The school's course function
+    constructor(address[] students) {
+        course = msg.sender;
+
+        n_students = 0;
+    }
+
+    function AddStudent(address student) {
+        if (msg.sender == course) {
+            Students.push(student);
+        } else {}
+    }
+    function AddStudents(address[] students) {
+        if (msg.sender == course) {
+            Students.push(students);
+        } else {}
+    }
+    function AssignProffessor(address professor, Subject subject) { // Course can be code, like 'int course_id'
+        if () {
+            
+        }
+    }
+
+
+
+
+
+
+
     struct Contract {
         Student[] student;
-        Course[] courses;
+        Course[] course_subjects;
     }
     
     struct Student {
@@ -22,16 +68,14 @@ contract AcademicService {
     }
     */
 
-    Contract[] contracts;
-    address[] students;
+    //Contract[] contracts;
 
-    // All this is inside a course with x "cadeiras"
 
-    // The school's function
-    constructor(address[] students)
-    function AddStudent(address)
-    function AddStudents(address[])
-    function AssignProffessor(address, cadeira) // Course can be code, like 'int course_id'
+    
+
+    // All this is inside a course with x subjects
+
+    
 
     // The student's functions
     function RegisterCourse(int course_id) // payable -> pode registar até x créditos
@@ -46,6 +90,8 @@ contract AcademicService {
     // course is the contract, each "cadeira" will be a array or dictionary like the rock paper scissors game
     
     // use many odifiers and requires to make sure everything is well/ok/accectable in terms of conditions
+
+       // The payable things will be the student's reavaluation requests - como pagar para exames em recursos, e quem recebe é o prof. Valores no enunciado. o aluno paga 2, 1 para escola e outro prof
 
     function CreateContract(address[] calldata students) public /*payable returns(bool)*/ {
         // if students lenght != 0
