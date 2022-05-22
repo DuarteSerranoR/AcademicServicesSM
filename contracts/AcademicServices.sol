@@ -1,61 +1,203 @@
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+/*
 contract AcademicService {
+    
+    CourseContract[] courses;
+
+    constructor() {
+        courses = ...
+    }
+}
+*/
+
+/*
+contract StudentLedger (contains the students and their functions)
+...
+*/
+
+contract CourseContract {
 
     // Smart Contracts should be small, because of gas consumption
 
 
-    // --> The admin of the contract <--
-    address course;
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ///
+    ///     Struct Objects and Enumerables
+    ///
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    // The course's subjects
-    Subject[] Subjects;
+
+    enum Subjects_Enum {
+        DTI, // = 0 (uint val)
+        TFD, // = 1 (uint val)
+        SD, // = 2 (uint val)
+        PPC, // = 3 (uint val)
+        CQ // = 4 (uint val)
+    }
+
+    struct Subject {
+        address professor;
+        uint credits; // starts of with 3 or 6
+    }
+
+    struct Student {
+        // address addr;
+        uint validity; // TODO - date to where it is valid
+        //string degree_and_year;
+    }
+
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ///
+    ///     Stored State Values
+    ///
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+    uint CreationDate; // Course's validity = 1 year // TODO - use a timestamp to know when it was created and go from there?
+
+
+    // The admin of the contract -> the school's user address
+    address admin; // course admin
+
 
     // The students
-    address[] Students;
+    uint maxStudents; // limiter for gas prices
+    mapping(address => Student) Students;
+    address[] public Students_addr;
     
+
     // The professors
     address[] Professors;
 
+    
+    // The course's subjects
+    mapping(Subjects_Enum => Subject) Subjects; // Each subject has a professor, and will represented with an enumerable (int)
+                                                // This means that adding new subjects isn't possible without changing code.
+
+
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ///
+    ///     Course Contract's Initializable Constructor
+    ///
+    ///         Here are the hardcoded initial/default configurations for each stored state value.
+    ///
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 
     // The school's course function
-    constructor(address[] students) {
-        course = msg.sender;
+    constructor(address[] memory students) {
+        // TODO - create at least 5 subjects hardcoded
 
-        n_students = 0;
-    }
+        maxStudents = 9000; // limiter for gas prices - put in constructor?
 
-    function AddStudent(address student) {
-        if (msg.sender == course) {
-            Students.push(student);
-        } else {}
-    }
-    function AddStudents(address[] students) {
-        if (msg.sender == course) {
-            Students.push(students);
-        } else {}
-    }
-    function AssignProffessor(address professor, Subject subject) { // Course can be code, like 'int course_id'
-        if () {
-            
+        admin = msg.sender;
+        if (students.length > 0 && students.length < maxStudents) {
+            for (uint256 i = 0; i < students.length; i++) {
+                Student memory student = Student(0);
+                Students[students[i]] = student;
+                Students_addr.push(students[i]);
+            }
         }
     }
 
+    // School's course administration functions - used only by an admin
+    // TODO - can only add within the first week of the contract
+    function AddStudent(address student_addr) public returns (string memory) {
+        bool exists = contains(Students_addr, student_addr);
+         if (msg.sender != admin) {
+            // log address and function?
+            return "Permission level not enough.";
+        } else if (Students_addr.length + 1 >= maxStudents) {
+            return "Student number higher than the allowed ammount of students for this course.";
+        } else if (!exists) {
+            Student memory student = Student(0);
+            Students[student_addr] = student;
+            Students_addr.push(student_addr);
+            return "Success!";
+        } else if (exists) {
+            // log?
+            return "Student already existed.";
+        } else {
+            return "Failed to add new student";
+        }
+    }
+
+    function AddStudents(address[] memory students) public returns (string memory) {
+        bool exists = containsRange(Students_addr, students);
+         if (msg.sender != admin) {
+            // log address and function?
+            return "Permission level not enough.";
+        } else if (Students_addr.length + students.length >= maxStudents) {
+            return "Student number higher than the allowed ammount of students for this course.";
+        } else if (!exists) {
+            for (uint256 i = 0; i < students.length; i++) {
+                Student memory student_obj = Student(0);
+                Students[students[i]] = student_obj;
+                Students_addr.push(students[i]);
+            }
+            return "Success!";
+        } else if (exists) {
+            // log?
+            return "At least one student already existed.";
+        } else {
+            return "Failed adding students";
+        }
+    }
+    
+    function AssignProffessor(address professor, Subject subject) public returns (string memory) { // Course can be code, like 'int course_id'
+        // TODO - within the first two days of the contract
+
+        if (msg.sender != admin) {
+            // log address and function?
+            return "Permission level not enough.";
+        } else if () {
+            return "Success!";
+        } else {
+            return "Failed adding students";
+        }
+    }
+    
+
+
+
+
+    // Utils
+    function containsRange(address[] memory arr, address[] memory searchFor) private pure returns (bool) {
+        if (arr.length == 0)
+            return true;
+        for (uint256 i = 0; i < arr.length; i++) {
+            for (uint256 j = 0; i < searchFor.length; j++) {
+                if (arr[i] == searchFor[j]) {
+                    return true; // found it
+                }
+            }
+        }
+        return false; // not found
+    }
+
+    function contains(address[] memory arr, address searchFor) private pure returns (bool) {
+        if (arr.length == 0)
+            return true;
+        for (uint256 i = 0; i < arr.length; i++) {
+            if (arr[i] == searchFor) {
+                return true; // found it
+            }
+        }
+        return false; // not found
+    }
 
 
 
 
 
-
+    /*
     struct Contract {
         Student[] student;
         Course[] course_subjects;
-    }
-    
-    struct Student {
-        string addr;
-        uint validity; // TODO - date to where it is valid
-        string degree_and_year;
     }
 
     struct Course {
@@ -75,7 +217,7 @@ contract AcademicService {
 
     // All this is inside a course with x subjects
 
-    
+    /*
 
     // The student's functions
     function RegisterCourse(int course_id) // payable -> pode registar até x créditos
@@ -93,7 +235,7 @@ contract AcademicService {
 
        // The payable things will be the student's reavaluation requests - como pagar para exames em recursos, e quem recebe é o prof. Valores no enunciado. o aluno paga 2, 1 para escola e outro prof
 
-    function CreateContract(address[] calldata students) public /*payable returns(bool)*/ {
+    function CreateContract(address[] calldata students) public /*payable returns(bool)*//* {
         // if students lenght != 0
         
         // Per contract
@@ -104,6 +246,7 @@ contract AcademicService {
         Contract memory c = new Contract(student, courses);
         contracts.push(c);
     }
+    */
 
 }
 
