@@ -80,6 +80,7 @@ contract CourseContract {
 
     uint256 CreationDate; // Course's validity = 1 year // TODO - use a timestamp to know when it was created and go from there?
 
+    uint256 year;
 
     // The admin of the contract -> the school's user address
     address admin; // course admin
@@ -116,6 +117,7 @@ contract CourseContract {
         // TODO - create at least 5 subjects hardcoded
 
         maxStudents = 9000; // limiter for gas prices - put in constructor?
+        year = 365 days; // could be changed in each deployment of the contract, depending on the year's number of days
 
         CreationDate = block.timestamp; // TODO - vulnerability or is this good here?
                                         //      - Since it is being used as a DateTime record, and not a randomness implementation variable, it should be fine.
@@ -132,46 +134,53 @@ contract CourseContract {
     }
 
     // School's course administration functions - used only by an admin
-    // TODO - can only add within the first week of the contract
     function AddStudent(address student_addr) public returns (string memory) {
         bool exists = contains(Students_addr, student_addr);
-         if (msg.sender != admin) {
+        if (!valid()) {
+            return "ERROR: Invalid Contract.";
+        } else if (CreationDate + 1 weeks < block.timestamp) {
+            return "ERROR: At least one week has passed since the creation of the contract, so you cannot add another student.";
+        } else if (msg.sender != admin) {
             // log address and function?
-            return "Permission level not enough.";
+            return "ERROR: Permission level not enough.";
         } else if (Students_addr.length + 1 >= maxStudents) {
-            return "Student number higher than the allowed ammount of students for this course.";
+            return "ERROR: Student number higher than the allowed ammount of students for this course.";
         } else if (!exists) {
             Student memory student = Student(0);
             Students[student_addr] = student;
             Students_addr.push(student_addr);
-            return "Success!";
+            return "OK: Success!";
         } else if (exists) {
             // log?
-            return "Student already existed.";
+            return "ERROR: Student already existed.";
         } else {
-            return "Failed to add new student";
+            return "ERROR: Failed to add new student";
         }
     }
 
     function AddStudents(address[] memory students) public returns (string memory) {
         bool exists = containsRange(Students_addr, students);
-         if (msg.sender != admin) {
+        if (!valid()) {
+            return "ERROR: Invalid Contract.";
+        } else if (CreationDate + 1 weeks < block.timestamp) {
+            return "ERROR: At least one week has passed since the creation of the contract, so you cannot add another student.";
+        } else if (msg.sender != admin) {
             // log address and function?
-            return "Permission level not enough.";
+            return "ERROR: Permission level not enough.";
         } else if (Students_addr.length + students.length >= maxStudents) {
-            return "Student number higher than the allowed ammount of students for this course.";
+            return "ERROR: Student number higher than the allowed ammount of students for this course.";
         } else if (!exists) {
             for (uint256 i = 0; i < students.length; i++) {
                 Student memory student_obj = Student(0);
                 Students[students[i]] = student_obj;
                 Students_addr.push(students[i]);
             }
-            return "Success!";
+            return "OK: Success!";
         } else if (exists) {
             // log?
-            return "At least one student already existed.";
+            return "ERROR: At least one student already existed.";
         } else {
-            return "Failed adding students";
+            return "ERROR: Failed adding students";
         }
     }
     
@@ -186,17 +195,19 @@ contract CourseContract {
     }
     
     function AssignProfessor(address professor, Subjects_Enum subject) private returns (string memory) { // Course can be code, like 'int course_id'
-        // TODO - within the first two days of the contract
-
-        if (msg.sender != admin) { // TODO - use requires? like require (...sender == admin, "...") for everything
+        if (!valid()) {
+            return "ERROR: Invalid Contract.";
+        } else if (CreationDate + 2 days < block.timestamp) {
+            return "ERROR: At least two days have passed since the creation of the contract, so you cannot assign professors.";
+        } else if (msg.sender != admin) { // TODO - use requires? like require (...sender == admin, "...") for everything
             // log address and function?
-            return "Permission level not enough.";
+            return "ERROR: Permission level not enough.";
         } else if (true) {
 
 
-            return "Success!";
+            return "OK: Success!";
         } else {
-            return "Failed adding students";
+            return "ERROR: Failed adding students";
         }
     }
     
@@ -208,6 +219,10 @@ contract CourseContract {
     ///
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+
+    function valid() private view returns (bool) {
+        return CreationDate + year > block.timestamp;
+    }
 
     function containsRange(address[] memory arr, address[] memory searchFor) private pure returns (bool) {
         if (arr.length == 0)
