@@ -9,13 +9,19 @@ contract AcademicService {
     constructor() {
         courses = ...
     }
+
+    function newCourse(students)
+
+    /// ... all the other functions from each course contract
 }
 */
 
 /*
-contract StudentLedger (contains the students and their functions)
+contract StudentLedger (contains the students and their functions) (?)
 ...
 */
+
+
 
 contract CourseContract {
 
@@ -29,12 +35,27 @@ contract CourseContract {
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
+    /// When changed, update the SubjectEnumByIndex and SubjectEnumByString functions
     enum Subjects_Enum {
         DTI, // = 0 (uint val)
         TFD, // = 1 (uint val)
         SD, // = 2 (uint val)
         PPC, // = 3 (uint val)
         CQ // = 4 (uint val)
+    } function SubjectEnum(uint i) private pure returns (Subjects_Enum) {
+        if (i==0) return Subjects_Enum.DTI;
+        else if (i==1) return Subjects_Enum.TFD;
+        else if (i==2) return Subjects_Enum.SD;
+        else if (i==3) return Subjects_Enum.PPC;
+        else if (i==4) return Subjects_Enum.CQ;
+        else revert("Unkown Subjects_Enum index.");
+    } function SubjectEnum(string memory str) private pure returns (Subjects_Enum) {
+        if (equals(str,"DTI")) return Subjects_Enum.DTI;
+        else if (equals(str,"TFD")) return Subjects_Enum.TFD;
+        else if (equals(str,"SD")) return Subjects_Enum.SD;
+        else if (equals(str,"PPC")) return Subjects_Enum.PPC;
+        else if (equals(str,"CQ")) return Subjects_Enum.CQ;
+        else revert("Unkown Subjects_Enum string.");
     }
 
     struct Subject {
@@ -42,11 +63,12 @@ contract CourseContract {
         uint credits; // starts of with 3 or 6
     }
 
-    struct Student {
+    struct Student { // TODO - might revert back to only have a address array?
         // address addr;
         uint validity; // TODO - date to where it is valid
         //string degree_and_year;
     }
+
 
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -56,7 +78,7 @@ contract CourseContract {
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-    uint CreationDate; // Course's validity = 1 year // TODO - use a timestamp to know when it was created and go from there?
+    uint256 CreationDate; // Course's validity = 1 year // TODO - use a timestamp to know when it was created and go from there?
 
 
     // The admin of the contract -> the school's user address
@@ -65,14 +87,15 @@ contract CourseContract {
 
     // The students
     uint maxStudents; // limiter for gas prices
-    mapping(address => Student) Students;
+                      // TODO - convert to assert <------------------
+    mapping(address => Student) Students; // TODO - might revert back to only have a address array?
     address[] public Students_addr;
     
 
     // The professors
     address[] Professors;
 
-    
+
     // The course's subjects
     mapping(Subjects_Enum => Subject) Subjects; // Each subject has a professor, and will represented with an enumerable (int)
                                                 // This means that adding new subjects isn't possible without changing code.
@@ -94,6 +117,10 @@ contract CourseContract {
 
         maxStudents = 9000; // limiter for gas prices - put in constructor?
 
+        CreationDate = block.timestamp; // TODO - vulnerability or is this good here?
+                                        //      - Since it is being used as a DateTime record, and not a randomness implementation variable, it should be fine.
+                                        //      -> https://stackoverflow.com/questions/71000103/solidity-block-timestamp-vulnerability
+                                        //      -> https://ethereum.stackexchange.com/questions/108033/what-do-i-need-to-be-careful-about-when-using-block-timestamp
         admin = msg.sender;
         if (students.length > 0 && students.length < maxStudents) {
             for (uint256 i = 0; i < students.length; i++) {
@@ -148,13 +175,25 @@ contract CourseContract {
         }
     }
     
-    function AssignProffessor(address professor, Subject subject) public returns (string memory) { // Course can be code, like 'int course_id'
+    function AssignProfessor(address professor, uint subject) public returns (string memory) { // Course can be code, like 'int course_id'
+        Subjects_Enum s = SubjectEnum(subject);
+        return AssignProfessor(professor, s);
+    }
+    
+    function AssignProfessor(address professor, string memory subject) public returns (string memory) { // Course can be code, like 'int course_id'
+        Subjects_Enum s = SubjectEnum(subject);
+        return AssignProfessor(professor, s);
+    }
+    
+    function AssignProfessor(address professor, Subjects_Enum subject) private returns (string memory) { // Course can be code, like 'int course_id'
         // TODO - within the first two days of the contract
 
-        if (msg.sender != admin) {
+        if (msg.sender != admin) { // TODO - use requires? like require (...sender == admin, "...") for everything
             // log address and function?
             return "Permission level not enough.";
-        } else if () {
+        } else if (true) {
+
+
             return "Success!";
         } else {
             return "Failed adding students";
@@ -163,9 +202,13 @@ contract CourseContract {
     
 
 
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ///
+    ///     Utils
+    ///
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-    // Utils
     function containsRange(address[] memory arr, address[] memory searchFor) private pure returns (bool) {
         if (arr.length == 0)
             return true;
@@ -189,6 +232,14 @@ contract CourseContract {
         }
         return false; // not found
     }
+
+    function equals(string memory s1, string memory s2) private pure returns (bool) {
+        return keccak256(abi.encodePacked(s1)) == keccak256(abi.encodePacked(s2));
+    }
+
+
+
+
 
 
 
