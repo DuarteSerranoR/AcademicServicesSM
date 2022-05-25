@@ -157,9 +157,10 @@ contract CourseContract {
         year = 365 days; // could be changed in each deployment of the contract, depending on the year's number of days
         month = 30 days; // We are also assuming that a month is 30 days,, whatever the month may be!!
 
-
+        // 1 wei = 0,000000000000001 Finney
+        FinneyRate = 10**15;
         //FinneyRate = 0.001;
-        FinneyRate = 10**3;
+        //FinneyRate = 10**3;
 
         CreationDate = block.timestamp; // TODO - vulnerability or is this good here?
                                         //      - Since it is being used as a DateTime record, and not a randomness implementation variable, it should be fine.
@@ -184,13 +185,12 @@ contract CourseContract {
     }
 
     function withdrawal(uint val) public payable {
-        require(msg.value > 0, "Invalid withdrawal value.");
+        require(val > 0, "Invalid withdrawal value.");
         require(balances[msg.sender] >= val, "Not enough balance to perform withdrawal.");
         require(address(this).balance >= val, "Contract without enough balance to pay the ammount. Please contact an administrator.");
 
-        val = val*FinneyRate;
-        payable(msg.sender).transfer(val);
-        balances[msg.sender] -= msg.value;
+        payable(msg.sender).transfer(val * FinneyRate);
+        balances[msg.sender] -= val;
     }
 
     function balance() public view returns (uint) {
@@ -395,7 +395,7 @@ contract CourseContract {
         }
     }
 
-    
+
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ///
