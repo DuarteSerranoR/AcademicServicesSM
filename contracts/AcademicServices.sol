@@ -43,11 +43,11 @@ contract CourseContract {
         PPC, // = 3 (uint val)
         CQ // = 4 (uint val)
     } function SetupSubjects() private {
-        Subjects[Subjects_Enum.DTI] = Subject(address(0),6,new address[](0), new uint[](0), new bool[](0));
-        Subjects[Subjects_Enum.TFD] = Subject(address(0),6,new address[](0), new uint[](0), new bool[](0));
-        Subjects[Subjects_Enum.SD] = Subject(address(0),3,new address[](0), new uint[](0), new bool[](0));
-        Subjects[Subjects_Enum.PPC] = Subject(address(0),6,new address[](0), new uint[](0), new bool[](0));
-        Subjects[Subjects_Enum.CQ] = Subject(address(0),3,new address[](0), new uint[](0), new bool[](0));
+        Subjects[Subjects_Enum.DTI] = Subject(address(0),6,new address[](0), new int[](0), new bool[](0));
+        Subjects[Subjects_Enum.TFD] = Subject(address(0),6,new address[](0), new int[](0), new bool[](0));
+        Subjects[Subjects_Enum.SD] = Subject(address(0),3,new address[](0), new int[](0), new bool[](0));
+        Subjects[Subjects_Enum.PPC] = Subject(address(0),6,new address[](0), new int[](0), new bool[](0));
+        Subjects[Subjects_Enum.CQ] = Subject(address(0),3,new address[](0), new int[](0), new bool[](0));
         subjectNum = 5;
     } function SubjectEnum(uint i) private pure returns (Subjects_Enum) {
         if (i==0) return Subjects_Enum.DTI;
@@ -77,7 +77,7 @@ contract CourseContract {
         address professor;
         uint credits; // starts of with 3 or 6
         address[] students;
-        uint[] grades; // nested mappings don't work
+        int[] grades; // nested mappings don't work
         bool[] reevalRequests;
         // each student will have the same index as the grade and reevaluation requests
     }
@@ -93,6 +93,14 @@ contract CourseContract {
     }
 
 
+    ///
+    /// When using this function on the JavaScript code, it should be read:
+    ///     if (acquiredDegree) s = “Student " + student + " acquired the degree”
+    ///     else s = "A new grade was assigned to " + student
+    event GradeAssignment(bool acquiredDegree, address student);
+    
+
+
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ///
@@ -101,7 +109,7 @@ contract CourseContract {
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-    uint256 CreationDate; // Course's validity = 1 year // TODO - use a timestamp to know when it was created and go from there?
+    uint256 CreationDate; // Course's validity = 1 year
     uint256 FinneyRate;
     uint256 year;
     uint256 month;
@@ -118,7 +126,7 @@ contract CourseContract {
     // The students
     uint maxStudents; // limiter for gas prices
                       // TODO - convert to assert <------------------
-    mapping(address => Student) Students; // TODO - might revert back to only have a address array?
+    mapping(address => Student) Students;
     address[] public Students_addr;
     
 
@@ -127,8 +135,8 @@ contract CourseContract {
 
 
     // The course's subjects
-    mapping(Subjects_Enum => Subject) Subjects; // Each subject has a professor, and will represented with an enumerable (int)
-                                                // This means that adding new subjects isn't possible without changing code.
+    mapping(Subjects_Enum => Subject) public Subjects; // Each subject has a professor, and will represented with an enumerable (int)
+                                                       // This means that adding new subjects isn't possible without changing code.
 
 
 
@@ -140,12 +148,11 @@ contract CourseContract {
     ///
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    // TODO - apply modifiers to simplify repeated already existing requirements
 
 
     // The school's course function
     constructor(address[] memory students) {
-        // TODO - create at least 5 subjects hardcoded
-
         maxStudents = 9000; // limiter for gas prices - put in constructor?
         year = 365 days; // could be changed in each deployment of the contract, depending on the year's number of days
         month = 30 days; // We are also assuming that a month is 30 days,, whatever the month may be!!
@@ -203,7 +210,6 @@ contract CourseContract {
         Students[student_addr] = student;
         Students_addr.push(student_addr);
     }
-
     function AddStudents(address[] memory students) public {
         bool exists = containsRange(Students_addr, students);
         require(valid(), "Invalid Contract.");
@@ -222,12 +228,10 @@ contract CourseContract {
         Subjects_Enum s = SubjectEnum(subject);
         AssignProfessor(professor, s);
     }
-    
     function AssignProfessor(address professor, string memory subject) public {
         Subjects_Enum s = SubjectEnum(subject);
         AssignProfessor(professor, s);
     }
-    
     function AssignProfessor(address professor, Subjects_Enum subject) private {
         require(valid(), "Invalid Contract.");
         require(CreationDate + 2 days >= block.timestamp, "At least two days have passed since the creation of the contract, so you cannot assign professors.");
@@ -251,7 +255,7 @@ contract CourseContract {
     function RegisterSubject(Subjects_Enum subject) private {
         require(valid(), "Invalid Contract.");
         require(CreationDate + 2 weeks >= block.timestamp, "At least two weeks have passed since the creation of the contract, there cannot be any more student registerations to subjects in the contract.");
-        require(contains(Students_addr, msg.sender), "Student not registered in the contract to be assign a subject. If you are a student, contact the faculty!");
+        require(contains(Students_addr, msg.sender), "Student not registered in the contract. If you are a student, contact the faculty!");
         require(Subjects[subject].professor != address(0), "Subject with no assigned professor.");
         require(!contains(Subjects[subject].students, msg.sender), "Student was already registered in this subject.");
         
@@ -300,6 +304,7 @@ contract CourseContract {
             Subjects[subject].reevalRequests.push(false);
         }
     }
+
     function RequestReevaluation(uint subject) public {
         Subjects_Enum s = SubjectEnum(subject);
         RequestReevaluation(s);
@@ -311,6 +316,7 @@ contract CourseContract {
     function RequestReevaluation(Subjects_Enum subject) private {
         require(valid(), "Invalid Contract.");
         require(CreationDate + 2 weeks >= block.timestamp, "At least two weeks have passed since the creation of the contract, there cannot be any more student registerations to subjects in the contract.");
+        require(contains(Students_addr, msg.sender), "Student not registered in the contract. If you are a student, contact the faculty!");
         require(contains(Subjects[subject].students, msg.sender), "Student not registered in the subject to request reevaluation.");
         uint i = index(Subjects[subject].students,msg.sender);
         require(Subjects[subject].grades[i] < 10, "You passed the subject so requesting a reevaluation is not possible.");
@@ -319,6 +325,7 @@ contract CourseContract {
         Subjects[subject].reevalRequests[i] = true;
         balances[msg.sender] -= 2; // pays 2 finney ahead so it cannot be withdrawn
     }
+
     function UnregisterSubject(uint subject) public {
         Subjects_Enum s = SubjectEnum(subject);
         UnregisterSubject(s);
@@ -330,28 +337,65 @@ contract CourseContract {
     function UnregisterSubject(Subjects_Enum subject) private {
         require(valid(), "Invalid Contract.");
         require(CreationDate + month >= block.timestamp, "At least one month has passed since the creation of the contract, there cannot be any more student unregisterations from subjects in the contract.");
+        require(contains(Students_addr, msg.sender), "Student not registered in the contract. If you are a student, contact the faculty!");
         require(contains(Subjects[subject].students, msg.sender), "Student already is not registered in the subject.");
         uint i = index(Subjects[subject].students,msg.sender);
-        require(Subjects[subject].grades[i] < 10, "You passed the subject so requesting a reevaluation is not possible.");
-        require(balances[msg.sender] >= 2, "Not enough balance to request a reevaluation. The price is 2 Finneys.");
 
-        Subjects[subject].reevalRequests[i] = true;
-        balances[msg.sender] -= 2; // pays 2 finney ahead so it cannot be withdrawn
+        Subjects[subject].students[i] = address(0);
     }
 
     // The Professor
-    //function // atribuir nota (string (address_str) student, int cadeira -- eng?, grade)
-    //function // AcceptReevaluation or ProcessReevaluation -> (string student_addr, cadeira, boolean accepted) // se aceita ou não -> 
-                            // vai ao aluno, tenta remover o curso, verifica se o prof é prof do curso e finalmente, se o aluno é aluno do curso. 
-                            // Se aceitar recebe o dinheiro de reavaliação e o aluno fica sem nota ou uma flag para ser reavaliado (grade=-1)
+    function GradeStudent(address studentAddr, uint subject, int grade) public {
+        Subjects_Enum s = SubjectEnum(subject);
+        GradeStudent(studentAddr, s, grade);
+    }
+    function GradeStudent(address studentAddr, string memory subject, int grade) public {
+        Subjects_Enum s = SubjectEnum(subject);
+        GradeStudent(studentAddr, s, grade);
+    }
+    function GradeStudent(address studentAddr, Subjects_Enum subject, int grade) public {
+        require(valid(), "Invalid Contract.");
+        require(contains(Professors, msg.sender), "Address not registred as a Professor.");
+        require(Subjects[subject].professor == msg.sender, "Professor doesn't own this subject.");
+        require(contains(Subjects[subject].students,studentAddr), "Student doesn't belong in this subject.");
+        require(0 <= grade && grade >= 20, "Invalid grade. Grades can only range between 0 and 20.");
+        
+        uint i = index(Subjects[subject].students,studentAddr);
+        Subjects[subject].grades[i] = grade;
+
+        if (grade >= 15)
+            emit GradeAssignment(true, studentAddr);
+        else
+            emit GradeAssignment(false, studentAddr);
+    }
+
+    function AcceptReevaluation(address studentAddr, uint subject, bool accepted) public {
+        Subjects_Enum s = SubjectEnum(subject);
+        AcceptReevaluation(studentAddr, s, accepted);
+    }
+    function AcceptReevaluation(address studentAddr, string memory subject, bool accepted) public {
+        Subjects_Enum s = SubjectEnum(subject);
+        AcceptReevaluation(studentAddr, s, accepted);
+    }
+    function AcceptReevaluation(address studentAddr, Subjects_Enum subject, bool accepted) public {
+        require(valid(), "Invalid Contract.");
+        require(contains(Professors, msg.sender), "Address not registred as a Professor.");
+        require(Subjects[subject].professor == msg.sender, "Professor doesn't own this subject.");
+        require(contains(Subjects[subject].students,studentAddr), "Student doesn't belong in this subject.");
+        uint i = index(Subjects[subject].students,studentAddr);
+        require(Subjects[subject].reevalRequests[i], "Student didn't request Reevaluation.");
+        
+        if (accepted) {
+            balances[msg.sender] += 1;
+            Subjects[subject].reevalRequests[i] = false;
+            Subjects[subject].grades[i] = -1; // marked as to be reevaluated
+        } else {
+            balances[Subjects[subject].students[i]] += 2;
+            Subjects[subject].reevalRequests[i] = false;
+        }
+    }
 
     
-    // TODO - instead of ifs, use many 'modifier's and 'require()'s to make sure everything is well/ok/accectable in terms of conditions
-
-/*
-    prof gets the id of student, sees if student is on course, if it is the course's professor, it changes the grade
-*/
-
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ///
@@ -404,16 +448,5 @@ contract CourseContract {
 
         return n;
     }
-
-
-
-
-    /*
-
-
-
-    // The payable things will be the student's reavaluation requests - como pagar para exames em recursos, e quem recebe é o prof. Valores no enunciado. o aluno paga 2, 1 para escola e outro prof
-
-    */
 
 }
