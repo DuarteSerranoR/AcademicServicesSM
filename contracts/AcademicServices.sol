@@ -358,7 +358,7 @@ contract CourseContract {
         require(contains(Professors, msg.sender), "Address not registred as a Professor.");
         require(Subjects[subject].professor == msg.sender, "Professor doesn't own this subject.");
         require(contains(Subjects[subject].students,studentAddr), "Student doesn't belong in this subject.");
-        require(0 <= grade && grade >= 20, "Invalid grade. Grades can only range between 0 and 20.");
+        require(0 <= grade && grade <= 20, "Invalid grade. Grades can only range between 0 and 20.");
         
         uint i = index(Subjects[subject].students,studentAddr);
         Subjects[subject].grades[i] = grade;
